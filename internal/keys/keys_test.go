@@ -18,7 +18,6 @@ package keys
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -173,7 +172,7 @@ func TestLoadPrivateKeysErr(t *testing.T) {
 
 // prepareTestKeysDir creates new temp directory and files with private keys
 func prepareTestKeysDir(t *testing.T) string {
-	dir, err := ioutil.TempDir(".", "ssh-keys-test-dir")
+	dir, err := os.MkdirTemp(".", "ssh-keys-test-dir")
 	if err != nil {
 		t.Fatal("failed to create temp dir: ", err)
 	}
@@ -195,7 +194,7 @@ func prepareTestKeysDir(t *testing.T) string {
 }
 
 func prepareTestKeysDirNoReadable(t *testing.T) string {
-	dir, err := ioutil.TempDir(".", "ssh-keys-test-dir")
+	dir, err := os.MkdirTemp(".", "ssh-keys-test-dir")
 	if err != nil {
 		t.Fatal("failed to create temp dir: ", err)
 	}
@@ -203,13 +202,16 @@ func prepareTestKeysDirNoReadable(t *testing.T) string {
 	name := "noreadable"
 	createFile(t, dir, name, "")
 
-	os.Chmod(filepath.Join(dir, name), 0000)
+	err = os.Chmod(filepath.Join(dir, name), 0000)
+	if err != nil {
+		t.Fatal("failed to chmod file: ", err)
+	}
 
 	return dir
 }
 
 func prepareTestKeysDirWithNoRegular(t *testing.T) string {
-	dir, err := ioutil.TempDir(".", "ssh-keys-test-dir")
+	dir, err := os.MkdirTemp(".", "ssh-keys-test-dir")
 	if err != nil {
 		t.Fatal("failed to create temp dir: ", err)
 	}

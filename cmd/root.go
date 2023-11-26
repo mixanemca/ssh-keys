@@ -59,12 +59,12 @@ func run(cmd *cobra.Command, args []string) {
 	// Create a new TUI model which will be rendered in Bubbletea.
 	state, err := ui.NewModel()
 	if err != nil {
-		fmt.Println(fmt.Sprintf("Error starting init command: %s\n", err))
+		fmt.Printf("Error starting init command: %v\n", err)
 		os.Exit(1)
 	}
 	// tea.NewProgram starts the Bubbletea framework which will render our
 	// application using our state.
-	if err := tea.NewProgram(state).Start(); err != nil {
+	if _, err := tea.NewProgram(state).Run(); err != nil {
 		log.Fatal(err)
 	}
 }
