@@ -42,13 +42,16 @@ func LoadPrivateKeys(root string) ([]string, error) {
 		if info == nil {
 			return nil
 		}
+
 		if path == root {
 			return nil
 		}
+
 		if err != nil {
 			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
 			return err
 		}
+
 		if info.IsDir() || !info.Mode().IsRegular() {
 			return nil
 		}
@@ -64,7 +67,6 @@ func LoadPrivateKeys(root string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("error walking the path %q: %v\n", root, err)
 		return nil, err
 	}
 
