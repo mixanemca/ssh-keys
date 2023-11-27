@@ -4,7 +4,27 @@ Work with SSH keys easily!
 
 ## What is it?
 
+`ssh-keys` is a terminal based utility designed from easily working with SSH keys.
+
+Use it to discover existing, creates a new and deletes the SSH keys and for work with `ssh-agent(1)`.
+
+Carefully! Right now there is an active development stage.
+
 ## Installation
+
+### Go
+
+```bash
+go install github.com/mixanemca/ssh-keys@latest
+```
+
+### Build (requires Go 1.21+)
+
+```bash
+git clone https://github.com/mixanemca/ssh-keys.git
+cd ssh-keys
+make
+```
 
 ## TODO
 
