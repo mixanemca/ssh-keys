@@ -48,8 +48,7 @@ func LoadPrivateKeys(root string) ([]string, error) {
 		}
 
 		if err != nil {
-			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
-			return err
+			return fmt.Errorf("prevent panic by handling failure accessing a path")
 		}
 
 		if info.IsDir() || !info.Mode().IsRegular() {
@@ -62,7 +61,9 @@ func LoadPrivateKeys(root string) ([]string, error) {
 		}
 
 		if ok := isPrivateKey(privateBytes); ok {
-			keys = append(keys, path)
+			if name, err := filepath.Rel(root, path); err == nil {
+				keys = append(keys, name)
+			}
 		}
 		return nil
 	})

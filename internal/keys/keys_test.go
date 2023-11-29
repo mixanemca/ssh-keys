@@ -129,10 +129,10 @@ func TestLoadPrivateKeys(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	files := []string{
-		filepath.Join(dir, "id_ecdsa"),
-		filepath.Join(dir, "id_ed25519"),
-		filepath.Join(dir, "id_ed25519_with_passphrase"),
-		filepath.Join(dir, "id_rsa"),
+		"id_ecdsa",
+		"id_ed25519",
+		"id_ed25519_with_passphrase",
+		"id_rsa",
 	}
 
 	cases := []struct {
@@ -148,10 +148,10 @@ func TestLoadPrivateKeys(t *testing.T) {
 
 	for _, c := range cases {
 		got, err := LoadPrivateKeys(c.root)
+		if err != nil {
+			assert.EqualError(t, err, "prevent panic by handling failure accessing a path")
+		}
 		assert.Nil(t, err)
-		// if assert.Nil(t, err) {
-		// assert.EqualError(t, err, c.expectedErr, c.name)
-		// }
 		assert.Equal(t, c.want, got, c.name)
 	}
 }
