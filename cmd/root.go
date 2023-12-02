@@ -24,11 +24,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mixanemca/ssh-keys/internal/ui"
 	"github.com/spf13/cobra"
-)
-
-var (
-	version string = "unknown"
-	build   string = "unknown"
+	"github.com/version-go/ldflags"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -37,11 +33,12 @@ var rootCmd = &cobra.Command{
 	Short:         "Work with SSH keys easily!",
 	SilenceErrors: false,
 	SilenceUsage:  false,
-	Version:       version,
+	Version:       ldflags.Version(),
 	Run:           run,
 }
 
 func init() {
+	build := ldflags.Build()
 	vt := rootCmd.VersionTemplate()
 	rootCmd.SetVersionTemplate(vt[:len(vt)-1] + " (" + build + ")\n")
 }

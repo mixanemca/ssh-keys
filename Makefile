@@ -2,12 +2,14 @@
 
 PROJECTNAME := "ssh-keys"
 BUILD := $(shell git rev-parse --short HEAD)
+VERSION := $(shell git describe --abbrev=0 --tags)
+DATE := $(shell date)
 
 # Make is verbose in Linux. Make it silent.
 MAKEFLAGS += --silent
 
 # Use linker flags to provide version/build settings
-LDFLAGS=-ldflags "-s -w -X=main.build=$(BUILD)"
+LDFLAGS=-ldflags "-s -w -X 'github.com/version-go/ldflags.buildVersion=$(VERSION)' -X 'github.com/version-go/ldflags.buildHash=$(BUILD)' -X 'github.com/version-go/ldflags.buildTime=$(DATE)'"
 
 all: test lint build
 
@@ -26,7 +28,7 @@ lint:
 .PHONY: build
 build:
 	@mkdir -p bin
-	go build $(LDFLAGS) -o bin/$(PROJECTNAME) cmd/example-gorilla-rest-api/main.go
+	go build $(LDFLAGS) -o bin/$(PROJECTNAME) main.go
 
 ## clean: Cleanup binary.
 clean:
