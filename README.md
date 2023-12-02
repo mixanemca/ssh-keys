@@ -37,6 +37,7 @@ make
 - [ ] Search by key name, comment
 - [ ] Add config file
 - [ ] Support keys with passphrase
+- [ ] Add required environment variables to help
 
 ## License
 

@@ -30,6 +30,11 @@ build:
 	@mkdir -p bin
 	go build $(LDFLAGS) -o bin/$(PROJECTNAME) main.go
 
+## install: Install the binary.
+.PHONY: install
+install:
+	go install $(LDFLAGS) .
+
 ## clean: Cleanup binary.
 clean:
 	@rm -f bin/$(PROJECTNAME)
