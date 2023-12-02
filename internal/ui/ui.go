@@ -17,19 +17,24 @@ limitations under the License.
 package ui
 
 import (
+	"bytes"
 	"fmt"
-	"log"
-	"os"
-	"path/filepath"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mixanemca/ssh-keys/internal/keys"
+	"github.com/fatih/color"
+	"github.com/mixanemca/ssh-keys/internal/models"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 type Model struct {
-	// Keys stores the private keys paths.
-	Keys []string
+	// Keys stores the keys.
+	Keys []*models.Key
+	// AgentClient store the SSH agent client.
+	AgentClient agent.ExtendedAgent
+	// AgentKeys stores the public keys loaded to SSH agent.
+	AgentKeys [][]byte
 	// selectedIndex stores index of current selected private key.
 	selectedIndex int
 }
@@ -47,17 +52,30 @@ var _ tea.Model = (*Model)(nil)
 func (m *Model) View() string {
 	var keys []string
 	for i, k := range m.Keys {
+		if slices.ContainsFunc(m.AgentKeys, func(data []byte) bool {
+			return bytes.Equal(data, k.Public.Marshal())
+		}) {
+			k.LoadedToAgent = true
+		}
 		if i == m.selectedIndex {
-			keys = append(keys, fmt.Sprintf("-> %s", k))
+			if k.LoadedToAgent {
+				keys = append(keys, fmt.Sprintf("-> %s", color.GreenString(k.Name)))
+			} else {
+				keys = append(keys, fmt.Sprintf("-> %s", k.Name))
+			}
 		} else {
-			keys = append(keys, fmt.Sprintf("   %s", k))
+			if k.LoadedToAgent {
+				keys = append(keys, fmt.Sprintf("   %s", color.GreenString(k.Name)))
+			} else {
+				keys = append(keys, fmt.Sprintf("   %s", k.Name))
+			}
 		}
 	}
 
 	return fmt.Sprintf(`Found private keys:
 %s
 
-Press enter/return to select a list item, arrow keys to move, Ctrl+C or q to exit.`,
+Press enter/return to load or unload a key from the ssh-agent, arrow keys to move, Ctrl+C or q to exit.`,
 		strings.Join(keys, "\n"))
 }
 
@@ -81,6 +99,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.moveCursor(msg), nil
 		}
 		switch msg.Type {
+		case tea.KeyEnter:
+			// Load and unload key from agent.
+			return m, m.handleEnter(msg)
 		case tea.KeyCtrlC:
 			// In this case, ctrl+c quits the app by sending a
 			// tea.Quit cmd. This is a Bubbletea builtin which terminates the
@@ -111,6 +132,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) Init() tea.Cmd {
 	var cmds []tea.Cmd
 	cmds = append(cmds, findPrivateKeys(m))
+	cmds = append(cmds, findAgentKeys(m))
 
 	return tea.Batch(cmds...)
 }
@@ -131,23 +153,4 @@ func (m *Model) moveCursor(msg tea.KeyMsg) *Model {
 	}
 
 	return m
-}
-
-// findPrivateKeys finds the SSH private keys in user's home directory.
-func findPrivateKeys(m *Model) tea.Cmd {
-	return func() tea.Msg {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatal("Failed to get user home dir: ", err)
-		}
-
-		sshDir := filepath.Join(home, ".ssh")
-
-		m.Keys, err = keys.LoadPrivateKeys(sshDir)
-		if err != nil {
-			log.Fatal("Failed to load private keys: ", err)
-		}
-
-		return m
-	}
 }

@@ -17,13 +17,18 @@ limitations under the License.
 package keys
 
 import (
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/mixanemca/ssh-keys/internal/models"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/ssh"
 )
 
 /*
@@ -32,7 +37,6 @@ Generate keys:
 	ssh-keygen -t dsa -b 1024 -f id_dsa -N ''
 	ssh-keygen -t ecdsa -b 521 -f id_ecdsa -N ''
 	ssh-keygen -o -a 100 -t ed25519 -f id_ed25519 -N ''
-	ssh-keygen -o -a 100 -t ed25519 -f id_ed25519_with_passphrase -N 'with-passphrase'
 */
 const (
 	keyRSA string = `-----BEGIN OPENSSH PRIVATE KEY-----
@@ -91,14 +95,6 @@ PwAAAAtzc2gtZWQyNTUxOQAAACCKNIzSklTj21fPxMTZGBqbsZnjL6yxq2ElEgKY7FgQeg
 AAAEB1uJSCcTimhYwSjImzRDNTpvZqkGdRKQVRu2xxxXmQxIo0jNKSVOPbV8/ExNkYGpux
 meMvrLGrYSUSApjsWBB6AAAAD21ickB0aG9yYS5sb2NhbAECAwQFBg==
 -----END OPENSSH PRIVATE KEY-----`
-	keyEd25519WithPassphrase string = `-----BEGIN OPENSSH PRIVATE KEY-----
-b3BlbnNzaC1rZXktdjEAAAAACmFlczI1Ni1jdHIAAAAGYmNyeXB0AAAAGAAAABDQ6no/lP
-U5Ux98BYl9fKPIAAAAZAAAAAEAAAAzAAAAC3NzaC1lZDI1NTE5AAAAIHX9LlEhDhEuW+dG
-mTQo5g00CQQAAXpx8WHFe47eTHtmAAAAoKBEdarUsbFCj97azlqVHKpSldLi3cUB/XmZok
-znn2ikuxv9oCQJ2RL+6M5TOzSBX6Sa5aoocwHnCSgIas6xBs2VviHTQvhm6CgoS5KjKdgK
-vDet5DRqs3jd1HQ9eLUJdkfVuO7WnfVzPhT97hJlAdw4RULfCsk9vZRtVoIQUhbt55mq/j
-lFHj0Z0aVSyj520JlURJKW3DVO/DxKr4cFZeY=
------END OPENSSH PRIVATE KEY-----`
 	keyEmpty  string = ``
 	keyRandom string = `pFA?mH3y6.$snFd;o@ho5VI2.6:;X|gA87)X9CVj`
 )
@@ -113,37 +109,103 @@ func TestIsPrivateKey(t *testing.T) {
 		{"Test unsupported DSA key", []byte(keyDSA), false},
 		{"Test valid ECDSA key", []byte(keyECDSA), true},
 		{"Test valid Ed25519 key", []byte(keyEd25519), true},
-		{"Test valid Ed25519 key with passphrase", []byte(keyEd25519WithPassphrase), true},
 		{"Test empty key", []byte(keyEmpty), false},
 		{"Test random key", []byte(keyRandom), false},
 	}
 
 	for _, c := range cases {
-		got := isPrivateKey(c.key)
+		_, got := isPrivateKey(c.key)
 		assert.Equal(t, c.want, got, c.name)
 	}
+}
+
+func parseRawPrivateKey(key string) (any, ssh.PublicKey, error) {
+	var pubKey ssh.PublicKey
+
+	privKey, err := ssh.ParseRawPrivateKey([]byte(key))
+	if err != nil {
+		return nil, nil, err
+	}
+	if key, ok := privKey.(*ecdsa.PrivateKey); ok {
+		pubKey, err = ssh.NewPublicKey(key.Public())
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	if key, ok := privKey.(*ed25519.PrivateKey); ok {
+		pubKey, err = ssh.NewPublicKey(key.Public())
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	if key, ok := privKey.(*rsa.PrivateKey); ok {
+		pubKey, err = ssh.NewPublicKey(key.Public())
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return privKey, pubKey, nil
 }
 
 func TestLoadPrivateKeys(t *testing.T) {
 	dir := prepareTestKeysDir(t)
 	defer os.RemoveAll(dir)
 
-	files := []string{
-		"id_ecdsa",
-		"id_ed25519",
-		"id_ed25519_with_passphrase",
-		"id_rsa",
+	var files []*models.Key
+
+	privKey, pubKey, err := parseRawPrivateKey(keyECDSA)
+	if err != nil {
+		t.Fatal(err)
 	}
+	files = append(files, &models.Key{
+		Name:          "id_ecdsa",
+		Path:          filepath.Join(dir, "id_ecdsa"),
+		Format:        "ecdsa-sha2-nistp521",
+		Comment:       "",
+		Private:       privKey,
+		Public:        pubKey,
+		LoadedToAgent: false,
+	})
+
+	privKey, pubKey, err = parseRawPrivateKey(keyEd25519)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files = append(files, &models.Key{
+		Name:          "id_ed25519",
+		Path:          filepath.Join(dir, "id_ed25519"),
+		Format:        "ssh-ed25519",
+		Comment:       "",
+		Private:       privKey,
+		Public:        pubKey,
+		LoadedToAgent: false,
+	})
+	// {Name: "id_ed25519_with_passphrase"},
+
+	privKey, pubKey, err = parseRawPrivateKey(keyRSA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files = append(files, &models.Key{
+		Name:          "id_rsa",
+		Path:          filepath.Join(dir, "id_rsa"),
+		Format:        "ssh-rsa",
+		Comment:       "",
+		Private:       privKey,
+		Public:        pubKey,
+		LoadedToAgent: false,
+	})
 
 	cases := []struct {
 		name string
 		root string
-		want []string
+		want []*models.Key
 		// wantErr     bool
 		expectedErr string
 	}{
 		{"Test valid keys dir", dir, files, ""},
-		{"Test with noexists keys dir", "noexists", nil, ""},
+		{"Test with noexists keys dir", "noexists", []*models.Key{}, ""},
 	}
 
 	for _, c := range cases {
@@ -178,13 +240,12 @@ func prepareTestKeysDir(t *testing.T) string {
 	}
 
 	files := map[string]string{
-		"id_rsa":                     keyRSA,
-		"id_dsa":                     keyDSA,
-		"id_ecdsa":                   keyECDSA,
-		"id_ed25519":                 keyEd25519,
-		"id_ed25519_with_passphrase": keyEd25519WithPassphrase,
-		"id_empty":                   keyEmpty,
-		"id_random":                  keyRandom,
+		"id_rsa":     keyRSA,
+		"id_dsa":     keyDSA,
+		"id_ecdsa":   keyECDSA,
+		"id_ed25519": keyEd25519,
+		"id_empty":   keyEmpty,
+		"id_random":  keyRandom,
 	}
 	for k, v := range files {
 		createFile(t, dir, k, v)

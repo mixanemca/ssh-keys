@@ -22,22 +22,20 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mixanemca/ssh-keys/internal/models"
 	"golang.org/x/crypto/ssh"
 )
 
-func isPrivateKey(p []byte) bool {
-	_, err := ssh.ParsePrivateKey(p)
+func isPrivateKey(p []byte) (ssh.Signer, bool) {
+	signer, err := ssh.ParsePrivateKey(p)
 	if err != nil {
-		if _, ok := err.(*ssh.PassphraseMissingError); ok {
-			return true
-		}
-		return false
+		return nil, false
 	}
-	return true
+	return signer, true
 }
 
-func LoadPrivateKeys(root string) ([]string, error) {
-	var keys []string
+func LoadPrivateKeys(root string) ([]*models.Key, error) {
+	keys := make([]*models.Key, 0)
 	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		if info == nil {
 			return nil
@@ -60,9 +58,18 @@ func LoadPrivateKeys(root string) ([]string, error) {
 			return fmt.Errorf("read key file: %v", err)
 		}
 
-		if ok := isPrivateKey(privateBytes); ok {
+		if signer, ok := isPrivateKey(privateBytes); ok {
 			if name, err := filepath.Rel(root, path); err == nil {
-				keys = append(keys, name)
+				if privKey, err := ssh.ParseRawPrivateKey(privateBytes); err == nil {
+					key := &models.Key{
+						Name:    name,
+						Path:    path,
+						Format:  signer.PublicKey().Type(),
+						Private: privKey,
+						Public:  signer.PublicKey(),
+					}
+					keys = append(keys, key)
+				}
 			}
 		}
 		return nil

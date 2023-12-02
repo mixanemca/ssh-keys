@@ -29,12 +29,14 @@ make
 ## TODO
 
 - [x] List all available ssh private keys
-- [ ] List all ssh keys loaded to `ssh-agent`
-- [ ] Load key to `ssh-agent`
-- [ ] Unload key from `ssh-agent`
+- [x] List all ssh keys loaded to `ssh-agent`
+- [x] Load key to `ssh-agent`
+- [x] Unload key from `ssh-agent`
 - [ ] Generate the new ssh key pair
 - [ ] Remove key pair
 - [ ] Search by key name, comment
+- [ ] Add config file
+- [ ] Support keys with passphrase
 
 ## License
 
