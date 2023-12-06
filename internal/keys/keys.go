@@ -58,6 +58,16 @@ func LoadPrivateKeys(root string) ([]*models.Key, error) {
 			return fmt.Errorf("read key file: %v", err)
 		}
 
+		// Try to read the comment from public key file
+		var comment string
+		publicBytes, _ := os.ReadFile(path + ".pub")
+		if err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("read public key file: %v", err)
+		}
+		if len(publicBytes) > 0 {
+			_, comment, _, _, _ = ssh.ParseAuthorizedKey(publicBytes)
+		}
+
 		if signer, ok := isPrivateKey(privateBytes); ok {
 			if name, err := filepath.Rel(root, path); err == nil {
 				if privKey, err := ssh.ParseRawPrivateKey(privateBytes); err == nil {
@@ -65,6 +75,7 @@ func LoadPrivateKeys(root string) ([]*models.Key, error) {
 						Name:    name,
 						Path:    path,
 						Format:  signer.PublicKey().Type(),
+						Comment: comment,
 						Private: privKey,
 						Public:  signer.PublicKey(),
 					}
