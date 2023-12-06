@@ -16,7 +16,11 @@ limitations under the License.
 
 package models
 
-import "golang.org/x/crypto/ssh"
+import (
+	"fmt"
+
+	"golang.org/x/crypto/ssh"
+)
 
 // Key represents a SSH key with additional info like a path.
 type Key struct {
@@ -27,4 +31,9 @@ type Key struct {
 	Private       any
 	Public        ssh.PublicKey
 	LoadedToAgent bool
+}
+
+// String implements fmt.Stringer interface
+func (k *Key) String() string {
+	return fmt.Sprintf("%s %s", k.Name, k.Comment)
 }

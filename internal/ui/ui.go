@@ -59,15 +59,15 @@ func (m *Model) View() string {
 		}
 		if i == m.selectedIndex {
 			if k.LoadedToAgent {
-				keys = append(keys, fmt.Sprintf("-> %s", color.GreenString(k.Name)))
+				keys = append(keys, fmt.Sprintf("-> %s", color.GreenString(k.String())))
 			} else {
-				keys = append(keys, fmt.Sprintf("-> %s", k.Name))
+				keys = append(keys, fmt.Sprintf("-> %s", k))
 			}
 		} else {
 			if k.LoadedToAgent {
-				keys = append(keys, fmt.Sprintf("   %s", color.GreenString(k.Name)))
+				keys = append(keys, fmt.Sprintf("   %s", color.GreenString(k.String())))
 			} else {
-				keys = append(keys, fmt.Sprintf("   %s", k.Name))
+				keys = append(keys, fmt.Sprintf("   %s", k))
 			}
 		}
 	}
