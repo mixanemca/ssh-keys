@@ -24,6 +24,7 @@ go install github.com/mixanemca/ssh-keys@latest
 git clone https://github.com/mixanemca/ssh-keys.git
 cd ssh-keys
 make
+make install
 ```
 
 ## TODO
@@ -38,6 +39,8 @@ make
 - [ ] Add config file
 - [ ] Support keys with passphrase
 - [ ] Add required environment variables to help
+- [ ] Pagination
+- [ ] Add changelog
 
 ## License
 
