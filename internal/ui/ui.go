@@ -75,7 +75,7 @@ func (m *Model) View() string {
 	return fmt.Sprintf(`Found private keys:
 %s
 
-Press enter/return to load or unload a key from the ssh-agent, arrow keys to move, Ctrl+C or q to exit.`,
+Press enter/return or space to load or unload a key from the ssh-agent, arrow keys to move, Ctrl+C or q to exit.`,
 		strings.Join(keys, "\n"))
 }
 
@@ -99,7 +99,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.moveCursor(msg), nil
 		}
 		switch msg.Type {
-		case tea.KeyEnter:
+		case tea.KeyEnter, tea.KeySpace:
 			// Load and unload key from agent.
 			return m, m.handleEnter(msg)
 		case tea.KeyCtrlC:
